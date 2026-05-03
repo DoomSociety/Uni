@@ -1,0 +1,188 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+
+namespace LZWBinTree
+{
+    class Csomopont
+    {
+        public char Betu { get; }
+        public Csomopont BalNulla { get; set; }
+        public Csomopont JobbEgy { get; set; }
+
+        public Csomopont(char b = '/')
+        {
+            Betu = b;
+            BalNulla = null;
+            JobbEgy = null;
+        }
+    }
+
+    class LZWBinFa
+    {
+        private readonly Csomopont gyoker;
+        private Csomopont aktualis;
+        private int melyseg, maxMelyseg, atlagosszeg, atlagdb;
+        private double szorasosszeg;
+
+        public LZWBinFa()
+        {
+            gyoker = new Csomopont();
+            aktualis = gyoker;
+        }
+
+        public void AdatBe(char b)
+        {
+            if (b == '0')
+            {
+                if (aktualis.BalNulla == null)
+                {
+                    aktualis.BalNulla = new Csomopont('0');
+                    aktualis = gyoker;
+                }
+                else
+                {
+                    aktualis = aktualis.BalNulla;
+                }
+            }
+            else
+            {
+                if (aktualis.JobbEgy == null)
+                {
+                    aktualis.JobbEgy = new Csomopont('1');
+                    aktualis = gyoker;
+                }
+                else
+                {
+                    aktualis = aktualis.JobbEgy;
+                }
+            }
+        }
+
+        public void Kiir(StreamWriter sw)
+        {
+            melyseg = 0;
+            RKiir(gyoker, sw);
+        }
+
+        private void RKiir(Csomopont elem, StreamWriter sw)
+        {
+            if (elem != null)
+            {
+                melyseg++;
+                RKiir(elem.JobbEgy, sw);
+                for (int i = 0; i < melyseg; i++) sw.Write("---");
+                sw.WriteLine($"{elem.Betu}({melyseg - 1})");
+                RKiir(elem.BalNulla, sw);
+                melyseg--;
+            }
+        }
+
+        public int GetMelyseg()
+        {
+            melyseg = maxMelyseg = 0;
+            RMelyseg(gyoker);
+            return maxMelyseg - 1;
+        }
+
+        private void RMelyseg(Csomopont elem)
+        {
+            if (elem != null)
+            {
+                melyseg++;
+                if (melyseg > maxMelyseg) maxMelyseg = melyseg;
+                RMelyseg(elem.JobbEgy);
+                RMelyseg(elem.BalNulla);
+                melyseg--;
+            }
+        }
+
+        public double GetAtlag()
+        {
+            melyseg = atlagosszeg = atlagdb = 0;
+            RAtlag(gyoker);
+            return (double)atlagosszeg / atlagdb;
+        }
+
+        private void RAtlag(Csomopont elem)
+        {
+            if (elem != null)
+            {
+                melyseg++;
+                RAtlag(elem.JobbEgy);
+                RAtlag(elem.BalNulla);
+                melyseg--;
+                if (elem.JobbEgy == null && elem.BalNulla == null)
+                {
+                    atlagdb++;
+                    atlagosszeg += melyseg;
+                }
+            }
+        }
+
+        public double GetSzoras()
+        {
+            double atlag = GetAtlag();
+            szorasosszeg = 0.0;
+            melyseg = atlagdb = 0;
+            RSzoras(gyoker, atlag);
+            return Math.Sqrt(szorasosszeg / (atlagdb > 1 ? atlagdb - 1 : 1));
+        }
+
+        private void RSzoras(Csomopont elem, double atlag)
+        {
+            if (elem != null)
+            {
+                melyseg++;
+                RSzoras(elem.JobbEgy, atlag);
+                RSzoras(elem.BalNulla, atlag);
+                melyseg--;
+                if (elem.JobbEgy == null && elem.BalNulla == null)
+                {
+                    atlagdb++;
+                    szorasosszeg += Math.Pow(melyseg - atlag, 2);
+                }
+            }
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            if (args.Length != 3) { Console.WriteLine("Használat: lzw in -o out"); return; }
+            string inFile = args[0];
+            string outFile = args[2];
+
+            LZWBinFa fa = new LZWBinFa();
+            using (FileStream fs = new FileStream(inFile, FileMode.Open, FileAccess.Read))
+            {
+                int b;
+                while ((b = fs.ReadByte()) != -1 && b != 0x0a) ;
+
+                bool kommentben = false;
+                while ((b = fs.ReadByte()) != -1)
+                {
+                    if (b == 0x3e) { kommentben = true; continue; }
+                    if (b == 0x0a) { kommentben = false; continue; }
+                    if (kommentben || b == 0x4e) continue;
+
+                    for (int i = 0; i < 8; i++)
+                    {
+                        if ((b & 0x80) != 0) fa.AdatBe('1');
+                        else fa.AdatBe('0');
+                        b <<= 1;
+                    }
+                }
+            }
+
+            using (StreamWriter sw = new StreamWriter(outFile))
+            {
+                fa.Kiir(sw);
+                sw.WriteLine($"depth = {fa.GetMelyseg()}");
+                sw.WriteLine($"mean = {fa.GetAtlag():F6}");
+                sw.WriteLine($"var = {fa.GetSzoras():F6}");
+            }
+        }
+    }
+}

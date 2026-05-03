@@ -1,0 +1,87 @@
+IDENTIFICATION DIVISION.
+       PROGRAM-ID. LZW-TREE.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT IN-FILE ASSIGN TO EXTERNAL IN-FILENAME
+           ORGANIZATION IS BINARY SEQUENTIAL.
+           SELECT OUT-FILE ASSIGN TO EXTERNAL OUT-FILENAME
+           ORGANIZATION IS LINE SEQUENTIAL.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD IN-FILE.
+       01 IN-BYTE PIC X.
+       FD OUT-FILE.
+       01 OUT-LINE PIC X(100).
+
+       WORKING-STORAGE SECTION.
+       01 IN-FILENAME PIC X(50).
+       01 OUT-FILENAME PIC X(50).
+       
+
+       01 TREE-STRUCTURE.
+          05 NODE-COUNT PIC 9(5) VALUE 1.
+          05 NODES OCCURS 10000 TIMES INDEXED BY N-IDX.
+             10 NODE-CHAR PIC X.
+             10 LEFT-CHILD PIC 9(5) VALUE 0.
+             10 RIGHT-CHILD PIC 9(5) VALUE 0.
+
+       01 CURRENT-NODE PIC 9(5) VALUE 1.
+       01 TEMP-BYTE PIC 9(3).
+       01 BIT-IDX PIC 9.
+       01 IN-EOF PIC X VALUE 'N'.
+       01 COMMENT-FLAG PIC X VALUE 'N'.
+
+       PROCEDURE DIVISION.
+           ACCEPT IN-FILENAME FROM ARGUMENT-VALUE.
+           MOVE "output.txt" TO OUT-FILENAME.
+
+           OPEN INPUT IN-FILE.
+           INITIALIZE TREE-STRUCTURE.
+           MOVE '/' TO NODE-CHAR(1).
+
+           PERFORM UNTIL IN-EOF = 'Y'
+               READ IN-FILE INTO IN-BYTE
+                   AT END MOVE 'Y' TO IN-EOF
+                   NOT AT END
+                       MOVE FUNCTION ORD(IN-BYTE) TO TEMP-BYTE
+                       SUBTRACT 1 FROM TEMP-BYTE
+                       PERFORM PROCESS-BITS
+               END-READ
+           END-PERFORM.
+
+           CLOSE IN-FILE.
+           STOP RUN.
+
+       PROCESS-BITS.
+           PERFORM VARYING BIT-IDX FROM 1 BY 1 UNTIL BIT-IDX > 8
+               IF TEMP-BYTE >= 128
+                   PERFORM ADD-TO-TREE-1
+                   COMPUTE TEMP-BYTE = (TEMP-BYTE - 128) * 2
+               ELSE
+                   PERFORM ADD-TO-TREE-0
+                   COMPUTE TEMP-BYTE = TEMP-BYTE * 2
+               END-IF
+           END-PERFORM.
+
+       ADD-TO-TREE-0.
+           IF LEFT-CHILD(CURRENT-NODE) = 0
+               ADD 1 TO NODE-COUNT
+               MOVE NODE-COUNT TO LEFT-CHILD(CURRENT-NODE)
+               MOVE '0' TO NODE-CHAR(NODE-COUNT)
+               MOVE 1 TO CURRENT-NODE
+           ELSE
+               MOVE LEFT-CHILD(CURRENT-NODE) TO CURRENT-NODE
+           END-IF.
+
+       ADD-TO-TREE-1.
+           IF RIGHT-CHILD(CURRENT-NODE) = 0
+               ADD 1 TO NODE-COUNT
+               MOVE NODE-COUNT TO RIGHT-CHILD(CURRENT-NODE)
+               MOVE '1' TO NODE-CHAR(NODE-COUNT)
+               MOVE 1 TO CURRENT-NODE
+           ELSE
+               MOVE RIGHT-CHILD(CURRENT-NODE) TO CURRENT-NODE
+           END-IF.

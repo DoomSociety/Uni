@@ -1,0 +1,102 @@
+1.feladat
+------------------------------------
+1.Lambda / Lambda Lali
+2.Függvényösszetétel / Fanni
+3.Currying / Curry Csaba
+4.Magasabbrendű függvények / Hugó
+5.Fold (összehajtás) / Fold Frida
+6.Mintaillesztés / Miska (vagy Rekurzió / Rita)
+7.Lusta kiértékelés / Lusta László
+8.Tisztaság (Pure) / Tiszta Tivadar
+9.Hivatkozási átláthatóság / Hanna
+10.Normál forma / Norbert
+
+
+
+
+2.feladat
+---------------------------------------
+a)
+1. lépés (β): 5 + 5  
+2. lépés: 10 
+Normál forma: 10
+
+b)
+Normál forma: 14
+Normál forma: [2,4]
+Normál forma: Nincs Indok: Sosem fog leegyszerűsödni
+
+
+
+
+
+
+
+3.feladat
+-----------------------------------------
+A) Nem tail
+B) Tail
+C) osszegT [] acc = acc
+   osszegT (x:xs) acc = osszegT xs (acc + x)
+
+
+
+
+
+
+
+
+4.feladat
+--------------------------------------------
+a)add3 típusa: Int -> Int
+  add3 7 -> 10
+  map (add 10) [1,2,3] -> [11,12,13]
+
+
+b)lépések: 4 * 2 = 8, 8 + 1 = 9 → eredmény: 9
+  kombinalt = (^2) . (subtract 1) . (*3)
+  kombinalt 5 --> (5*3=15) -> (15-1=14) -> (14^2=196)
+
+
+
+
+
+
+
+
+5.feladat
+-----------------------------------------------
+1.Lusta
+2.Mindkettő
+3.Lusta
+4.Lusta
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
